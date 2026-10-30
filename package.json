@@ -6,7 +6,8 @@
     "dev": "vite --host 127.0.0.1 --port 5186 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5186 --strictPort",
-    "fonts": "node scripts/build-font.mjs"
+    "fonts": "node scripts/build-font.mjs",
+    "test": "node --test"
   },
   "license": "ISC",
   "type": "module",

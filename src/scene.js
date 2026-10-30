@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import motion from "./camera-motion.json";
+import { layoutTextRows } from "./text-layout.js";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
@@ -214,7 +215,6 @@ export async function createStudio(container) {
   let rows = [];
   let glow = 1;
   let textScale = 1;
-  const referenceWidth = 2.068;
   const view = new THREE.Matrix4();
   const viewProjection = new THREE.Matrix4();
   const entryTransform = new THREE.Matrix4();
@@ -283,7 +283,8 @@ export async function createStudio(container) {
           mesh: new THREE.Mesh(geometry, [front, side]),
           text,
           width: box.max.x - box.min.x,
-          height: box.max.y - box.min.y,
+          minY: box.min.y,
+          maxY: box.max.y,
         });
       }
     } catch (error) {
@@ -295,10 +296,12 @@ export async function createStudio(container) {
       row.mesh.geometry.dispose();
     });
     rows = nextRows;
-    const width = Math.max(0.1, ...rows.map((row) => row.width));
-    textScale = Math.min(1, referenceWidth / width);
+    const layout = layoutTextRows(rows, motion.gap);
+    textScale = layout.scale;
     rows.forEach((row, i) => {
-      row.mesh.position.y = rows.length === 1 ? 0 : (0.5 - i) * motion.gap;
+      row.scale = layout.rows[i].scale;
+      row.mesh.scale.setScalar(row.scale);
+      row.mesh.position.y = layout.rows[i].y;
       textGroup.add(row.mesh);
     });
     textGroup.scale.setScalar(textScale);
@@ -390,13 +393,17 @@ export async function createStudio(container) {
       const advance = font.data.glyphs[Array.from(lower.text)[0]].ha / 1000;
       const drift = smooth(0.4, 4.2, t);
       const flareX =
-        (-lower.width / 2 + advance * (0.65 + 0.22 * drift)) * textScale;
-      const flareY = (lower.mesh.position.y + 0.54 + 0.084 * drift) * textScale;
+        (-lower.width / 2 + advance * (0.65 + 0.22 * drift)) *
+        lower.scale *
+        textScale;
+      const flareY =
+        (lower.mesh.position.y + (0.54 + 0.084 * drift) * lower.scale) *
+        textScale;
       placeFlare(finish.uniforms.uFlare1.value, flareX, flareY, 0.006);
       placeFlare(
         finish.uniforms.uFlare2.value,
-        (rows[0].width / 2 - 0.035) * textScale,
-        (rows[0].mesh.position.y + 0.51) * textScale,
+        (rows[0].width / 2 - 0.035) * rows[0].scale * textScale,
+        (rows[0].mesh.position.y + 0.51 * rows[0].scale) * textScale,
         0.006,
       );
       const anchor = new THREE.Vector3(flareX, flareY, 0.006);
@@ -405,8 +412,8 @@ export async function createStudio(container) {
       reflection.y *= -1;
       pinkLight.position.copy(anchor).addScaledVector(reflection, 0.7);
       anchor.set(
-        (rows[0].width / 2 - 0.1) * textScale,
-        (rows[0].mesh.position.y + 0.35) * textScale,
+        (rows[0].width / 2 - 0.1) * rows[0].scale * textScale,
+        (rows[0].mesh.position.y + 0.35 * rows[0].scale) * textScale,
         0.006,
       );
       reflection.copy(camera.position).sub(anchor).normalize();
