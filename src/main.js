@@ -224,7 +224,7 @@ $("glow").addEventListener("input", () => {
 $("camera-side").addEventListener("change", () => {
   invalidateDownload();
   studio?.setSide($("camera-side").value);
-  status("idle");
+  if (statusState.key === "done") status("idle");
   dirty = true;
 });
 $("reset").addEventListener("click", () => {
