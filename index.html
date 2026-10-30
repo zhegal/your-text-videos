@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141416" />
+    <meta
+      name="description"
+      data-i18n-content="description"
+      content="3D text animation with local video export."
+    />
+    <title>Your Text — Text animation</title>
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <a
+          class="brand"
+          href="%BASE_URL%"
+          data-i18n-aria="home"
+          aria-label="Your Text — home"
+          ><span class="brand-mark">yt<span>®</span></span
+          ><span class="brand-description"
+            >YOUR TEXT<br /><span data-i18n="brandDescription"
+              >3D TEXT GENERATOR</span
+            ></span
+          ></a
+        >
+        <div class="header-right">
+          <div class="local-badge">
+            <i></i><span data-i18n="localProcessing">On-device processing</span>
+          </div>
+          <div
+            class="language-switch"
+            role="group"
+            data-i18n-aria="language"
+            aria-label="Interface language"
+          >
+            <button
+              type="button"
+              data-language="en"
+              lang="en"
+              aria-label="English"
+              aria-pressed="true"
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              data-language="ru"
+              lang="ru"
+              aria-label="Русский"
+              aria-pressed="false"
+            >
+              RU
+            </button>
+          </div>
+        </div>
+      </header>
+      <main>
+        <div class="intro">
+          <div><h1 data-i18n="heading">Text animation</h1></div>
+          <span class="edition">960 × 720<br /><span>4:3 / 30 FPS</span></span>
+        </div>
+        <div class="workspace">
+          <section
+            class="viewer"
+            data-i18n-aria="previewLabel"
+            aria-label="Animation preview"
+          >
+            <div class="viewer-top">
+              <span><i></i> <span data-i18n="preview">PREVIEW</span></span
+              ><span>960 × 720 <b>/</b> 4:3</span>
+            </div>
+            <div id="stage" class="stage">
+              <div id="loading" class="loading">
+                <strong data-i18n="loading">Loading scene</strong
+                ><span data-i18n="loadingDetails"
+                  >Loading font and lighting</span
+                >
+              </div>
+              <div class="stage-corner top-left"></div>
+              <div class="stage-corner bottom-right"></div>
+            </div>
+            <div class="transport">
+              <button
+                id="play"
+                class="icon-button"
+                data-i18n-aria="play"
+                aria-label="Play"
+                disabled
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="m9 5 10 7-10 7Z" />
+                </svg></button
+              ><button
+                id="replay"
+                class="icon-button"
+                data-i18n-aria="replay"
+                aria-label="Restart"
+                disabled
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 10a8 8 0 1 1 1 7M4 4v6h6" />
+                </svg></button
+              ><span id="time" class="time">00:01.00</span
+              ><input
+                id="timeline"
+                type="range"
+                min="0"
+                max="126"
+                step="1"
+                value="30"
+                data-i18n-aria="timeline"
+                aria-label="Video position"
+                disabled
+              /><span class="time duration">00:04.23</span
+              ><button
+                id="mute"
+                class="icon-button mute-button"
+                type="button"
+                data-i18n-aria="mute"
+                aria-label="Mute preview audio"
+                aria-pressed="false"
+              ></button
+              ><span class="fps">30 FPS</span>
+            </div>
+          </section>
+          <aside class="controls">
+            <div class="panel-heading">
+              <span class="step">01</span>
+              <h2 data-i18n="textHeading">Your text</h2>
+            </div>
+            <label class="field-label" for="line1" data-i18n="line1"
+              >First line</label
+            ><input
+              id="line1"
+              class="text-input"
+              type="text"
+              value="Your"
+              maxlength="40"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <label class="field-label" for="line2" data-i18n="line2"
+              >Second line</label
+            ><input
+              id="line2"
+              class="text-input"
+              type="text"
+              value="Text"
+              maxlength="40"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="field-hint" id="text-hint" data-i18n="textHint">
+              Latin and Cyrillic. Text is scaled automatically.
+            </p>
+            <div class="divider"></div>
+            <div class="panel-heading">
+              <span class="step">02</span>
+              <h2 data-i18n="appearance">Appearance</h2>
+              <button id="reset" class="reset" type="button" data-i18n="reset">
+                Reset
+              </button>
+            </div>
+            <div class="slider-label">
+              <label for="depth" data-i18n="depth">Text depth</label
+              ><output id="depth-value">100%</output>
+            </div>
+            <input
+              id="depth"
+              type="range"
+              min="40"
+              max="160"
+              value="100"
+              step="5"
+            />
+            <div class="slider-label">
+              <label for="glow" data-i18n="glow">Glow</label
+              ><output id="glow-value">100%</output>
+            </div>
+            <input
+              id="glow"
+              type="range"
+              min="0"
+              max="160"
+              value="100"
+              step="5"
+            />
+            <div class="divider"></div>
+            <div class="panel-heading">
+              <span class="step">03</span>
+              <h2 data-i18n="exportHeading">Video export</h2>
+            </div>
+            <div class="export-spec">
+              <div>
+                <span data-i18n="resolution">RESOLUTION</span
+                ><strong>960 × 720</strong>
+              </div>
+              <div>
+                <span data-i18n="duration">DURATION</span
+                ><strong data-i18n="durationValue">4.23 sec</strong>
+              </div>
+              <div>
+                <span data-i18n="frameRate">FRAME RATE</span
+                ><strong data-i18n="frameRateValue">30 fps</strong>
+              </div>
+              <div>
+                <span data-i18n="format">FORMAT</span
+                ><strong id="format-label">Checking…</strong>
+              </div>
+            </div>
+            <button id="export" class="export-button" disabled>
+              <span id="export-label">Download video</span
+              ><svg viewBox="0 0 24 24">
+                <path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4" />
+              </svg>
+            </button>
+            <button id="cancel" class="cancel-button" data-i18n="cancel" hidden>
+              Cancel export
+            </button>
+            <progress
+              id="progress"
+              max="127"
+              value="0"
+              hidden
+              data-i18n-aria="exportProgress"
+              aria-label="Video export progress"
+            ></progress>
+            <p id="status" class="status" role="status" aria-live="polite">
+              Original soundtrack included. Processed on your device.
+            </p>
+            <a
+              id="download"
+              class="download-link"
+              data-i18n="downloadAgain"
+              hidden
+              >Download again ↗</a
+            >
+          </aside>
+        </div>
+        <footer>
+          <span data-i18n="footer"
+            >Rendering and export run on your device.</span
+          ><span>YOUR TEXT</span>
+        </footer>
+      </main>
+    </div>
+    <audio
+      id="soundtrack"
+      src="%BASE_URL%soundtrack.m4a"
+      preload="auto"
+    ></audio>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
