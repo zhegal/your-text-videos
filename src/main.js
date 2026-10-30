@@ -7,7 +7,7 @@ import { resolveLanguage, setLanguage, getLanguage, t } from "./i18n.js";
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 setLanguage(resolveLanguage(navigator.language));
-const editable = ["line1", "line2", "depth", "glow", "reset"];
+const editable = ["line1", "line2", "depth", "glow", "camera-side", "reset"];
 const soundtrack = $("soundtrack");
 let studio;
 let format;
@@ -221,11 +221,19 @@ $("glow").addEventListener("input", () => {
   studio?.setGlow(Number($("glow").value) / 100);
   dirty = true;
 });
+$("camera-side").addEventListener("change", () => {
+  invalidateDownload();
+  studio?.setSide($("camera-side").value);
+  status("idle");
+  dirty = true;
+});
 $("reset").addEventListener("click", () => {
   invalidateDownload();
   $("depth").value = $("glow").value = "100";
   $("depth-value").textContent = $("glow-value").textContent = "100%";
   studio?.setGlow(1);
+  $("camera-side").value = "left";
+  studio?.setSide("left");
   updateText();
 });
 $("cancel").addEventListener("click", () => abortController?.abort());
@@ -303,6 +311,7 @@ async function init() {
   const setup = Promise.allSettled([getSoundtrack(), getExportFormat()]);
   try {
     studio = await createStudio($("stage"));
+    studio.setSide($("camera-side").value);
     studio.setGlow(Number($("glow").value) / 100);
     $("loading").remove();
     updateText();

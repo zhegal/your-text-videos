@@ -73,6 +73,8 @@ export async function createStudio(container) {
   addSoftbox([3, 3.2, 5], [9, 1.4], "#95b6ee", 0.95, false);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const environment = pmrem.fromScene(envScene, 0.12);
+  envScene.scale.x = -1;
+  const mirroredEnvironment = pmrem.fromScene(envScene, 0.12);
   scene.environment = environment.texture;
   pmrem.dispose();
   envScene.traverse((object) => {
@@ -110,10 +112,11 @@ export async function createStudio(container) {
     new THREE.ShaderMaterial({
       depthWrite: false,
       vertexShader,
-      uniforms: { uGlow: { value: 1 } },
-      fragmentShader: `varying vec2 vUv; uniform float uGlow;
+      uniforms: { uGlow: { value: 1 }, uSide: { value: 1 } },
+      fragmentShader: `varying vec2 vUv; uniform float uGlow; uniform float uSide;
     void main(){
       vec2 p=gl_FragCoord.xy/vec2(960.,720.);
+      if(uSide<0.) p.x=1.-p.x;
       vec3 c=vec3(.010,.010,.010);
       c+=vec3(.006,.011,.020)*exp(-length((p-vec2(.63,.72))*vec2(1.1,1.5))*4.)*uGlow;
       c+=vec3(.075,.073,.115)*exp(-length((p-vec2(.22,.6))*vec2(1.5,1.))*4.);
@@ -149,15 +152,17 @@ export async function createStudio(container) {
       tDiffuse: { value: null },
       uTime: { value: 1 },
       uGlow: { value: 1 },
+      uSide: { value: 1 },
       uFlare1: { value: new THREE.Vector2() },
       uFlare2: { value: new THREE.Vector2() },
       uFlareVisible: { value: 1 },
     },
     vertexShader,
     fragmentShader: `varying vec2 vUv; uniform sampler2D tDiffuse;
-      uniform vec2 uFlare1; uniform vec2 uFlare2; uniform float uTime; uniform float uGlow; uniform float uFlareVisible;
+      uniform vec2 uFlare1; uniform vec2 uFlare2; uniform float uTime; uniform float uGlow; uniform float uFlareVisible; uniform float uSide;
       vec3 flare(vec2 p,vec2 center,float intensity){
         vec2 d=(p-center)*vec2(1.333333,1.);
+        d.x*=uSide;
         float r=length(d);
         float core=.005/(r*r+.000035);
         vec3 color=vec3(1.,.90,.96)*core*.022;
@@ -215,6 +220,8 @@ export async function createStudio(container) {
   let rows = [];
   let glow = 1;
   let textScale = 1;
+  let sideSign = 1;
+  const mirror = new THREE.Matrix4().makeScale(-1, 1, 1);
   const view = new THREE.Matrix4();
   const viewProjection = new THREE.Matrix4();
   const entryTransform = new THREE.Matrix4();
@@ -275,7 +282,10 @@ export async function createStudio(container) {
         geometry.translate(-(box.min.x + box.max.x) / 2, 0, -1.8 * depth);
         const positions = geometry.attributes.position;
         for (let i = 0; i < positions.count; i++) {
-          positions.setX(i, positions.getX(i) + positions.getZ(i) * 0.085);
+          positions.setX(
+            i,
+            positions.getX(i) + positions.getZ(i) * 0.085 * sideSign,
+          );
         }
         geometry.computeVertexNormals();
         geometry.computeBoundingBox();
@@ -384,6 +394,17 @@ export async function createStudio(container) {
       );
       viewProjection.premultiply(entryTransform);
     }
+    if (sideSign < 0) {
+      // Reflect both coordinate systems so the camera changes sides and text stays readable.
+      viewProjection.premultiply(mirror).multiply(mirror);
+      camera.matrixWorld.premultiply(mirror).multiply(mirror);
+      camera.matrixWorld.decompose(
+        camera.position,
+        camera.quaternion,
+        camera.scale,
+      );
+      camera.updateMatrixWorld(true);
+    }
     camera.projectionMatrix.copy(viewProjection).multiply(camera.matrixWorld);
     camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
     scene.updateMatrixWorld(true);
@@ -395,14 +416,15 @@ export async function createStudio(container) {
       const flareX =
         (-lower.width / 2 + advance * (0.65 + 0.22 * drift)) *
         lower.scale *
-        textScale;
+        textScale *
+        sideSign;
       const flareY =
         (lower.mesh.position.y + (0.54 + 0.084 * drift) * lower.scale) *
         textScale;
       placeFlare(finish.uniforms.uFlare1.value, flareX, flareY, 0.006);
       placeFlare(
         finish.uniforms.uFlare2.value,
-        (rows[0].width / 2 - 0.035) * rows[0].scale * textScale,
+        (rows[0].width / 2 - 0.035) * rows[0].scale * textScale * sideSign,
         (rows[0].mesh.position.y + 0.51 * rows[0].scale) * textScale,
         0.006,
       );
@@ -412,7 +434,7 @@ export async function createStudio(container) {
       reflection.y *= -1;
       pinkLight.position.copy(anchor).addScaledVector(reflection, 0.7);
       anchor.set(
-        (rows[0].width / 2 - 0.1) * rows[0].scale * textScale,
+        (rows[0].width / 2 - 0.1) * rows[0].scale * textScale * sideSign,
         (rows[0].mesh.position.y + 0.35 * rows[0].scale) * textScale,
         0.006,
       );
@@ -452,6 +474,31 @@ export async function createStudio(container) {
     pinkLight.intensity = 0.7 * glow;
     blueLight.intensity = 0.32 * glow;
   }
+  function setSide(value) {
+    const nextSign = value === "right" ? -1 : 1;
+    if (nextSign === sideSign) return;
+    for (const row of rows) {
+      const geometry = row.mesh.geometry;
+      const positions = geometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        positions.setX(
+          i,
+          positions.getX(i) + positions.getZ(i) * 0.085 * (nextSign - sideSign),
+        );
+      }
+      positions.needsUpdate = true;
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+    }
+    sideSign = nextSign;
+    scene.environment =
+      sideSign < 0 ? mirroredEnvironment.texture : environment.texture;
+    key.position.x = -3 * sideSign;
+    rim.position.x = 6 * sideSign;
+    background.material.uniforms.uSide.value = sideSign;
+    finish.uniforms.uSide.value = sideSign;
+  }
   setText(["Your", "Text"]);
-  return { canvas: renderer.domElement, render, setText, setGlow };
+  return { canvas: renderer.domElement, render, setText, setGlow, setSide };
 }
